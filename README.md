@@ -1,5 +1,6 @@
 # my-own-ideas-of-future-techniques
 个人在未来技术领域的一些ideas
+现在readme文件里面的内容，之后将整理成单独的AI专题
 
 ## 1.AI（包括大模型）在视频创作的应用
 ### 1.1.AI收集动漫的评论和影视素材，生成视频

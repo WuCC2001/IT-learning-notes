@@ -59,19 +59,22 @@ class Solution:
 # 来表示每个元素的选取情况：1 表示选取该元素，0 表示不选取。
 # 这样，任意一个 n 位二进制数都唯一对应 S 的一个子集。
 # 二进制枚举子集的实现代码，通过变例0-2**n-1的所有二进制数，生成集合的全部子集
-class Solution:
-    def subsets(self, S:list[int])->list[list[int]]:                           # 返回集合 S 的所有子集
-        n = len(S)                                  # n 为集合 S 的元素个数
-        sub_sets = []                               # sub_sets 用于保存所有子集
-        for i in range(1 << n):                     # 枚举 0 ~ 2^n - 1 的所有可能，每个 i 表示一种选取方案
-            sub_set = []                            # sub_set 用于保存当前子集
-            for j in range(n):                      # 枚举集合 S 的每一个元素
-                # (i >> j) & 1 判断第 j 位是否为 1
-                # 如果为 1，说明在当前子集方案 i 中选取了 S[j]
-                if (i >> j) & 1:                    # 如果第 j 位为 1，则选取 S[j]
-                    sub_set.append(S[j])            # 将选取的元素 S[j] 加入到当前子集 sub_set 中
-            sub_sets.append(sub_set)                # 将当前子集 sub_set 加入到所有子集数组 sub_sets 中
-        return sub_sets                             # 返回所有子集
+def subset(S: list)->list[list]:
+    n = len(S)
+    subsets = []
+
+    for i in range(1 << n):
+        subset = []
+        for j in range(n):
+            # i的二进制，从右数第j位为1，表示子集包含对应元素
+            if (i >> j) & 1:
+                subset.append(S[j])
+        subsets.append(subset)
+
+    return subsets
+
+
+
 
 
 # 位运算是一种直接操作二进制位的高效技巧，能够在底层实现中大幅提升算法的时间和空间效率
@@ -85,7 +88,7 @@ class Solution:
 class Solution:
     def singleNumber(self, nums: list[int]) -> int:
         ans = 0
-        # 数值范围为-2**31 ~ 2**31
+        # 数值范围为-2**31 ~ 2**31-1
         for i in range(32):
             count = 0
             # 统计每个数位，出现1的次数
@@ -93,11 +96,23 @@ class Solution:
                 count += (nums[j] >> i) & 1
             # 如果该数位的1次数不为3的倍数
             if count % 3 != 0:
-                # 将负数的补码转换为「负号 + 原码」的形式
+                # 负数补码+对应正数=1 << n（数值范围），因此：负数补码- 1 << n = 对应负数
+                # 数位在最高位上为1，表示其为负数（补码形式）。将负数的补码转换为「负号+原码」的形式
                 if i == 31:
                     ans -= (1 << 31)
                 else:
                     ans = ans | 1 << i
         return ans
 
-print(3 ^ 5)
+# 补充：负数的补码形式
+def int_to_binary(num):
+   if num >= 0:
+       return bin(num)[2:] # 对于正数，直接转换
+   else:
+       return bin((1 << 8) + num)[2:] # 对于负数，使用补码表示
+positive_number = 5
+negative_number = -5
+# print(f"{positive_number} 的二进制表示为: {int_to_binary(positive_number)}")
+# print(f"{negative_number} 的二进制表示为: {int_to_binary(negative_number)}")
+
+print(len(bin(2796202)[2:]))

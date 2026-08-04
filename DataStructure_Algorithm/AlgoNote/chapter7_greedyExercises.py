@@ -85,7 +85,7 @@ def candy(ratings: list[int]) -> int:
 
     # 在头尾各加上1个空位，代表-1和n
     candies = [0] * (len(ratings)+2)
-    ratingsExpand = [float('inf')] + ratings + [float('inf')]
+    ratings = [float('inf')] + ratings + [float('inf')]
     for i in seq:
         # j 代表在 candies 中的实际位置
         j = i + 1
@@ -93,12 +93,12 @@ def candy(ratings: list[int]) -> int:
             candies[j] = 1
         if not candies[j-1] and candies[j+1]:
             # 考虑到相等情况，注意，在这种情况下给一颗糖就行
-            candies[j] = 1 if ratingsExpand[j]<=ratingsExpand[j+1] else candies[j+1]+1
+            candies[j] = 1 if ratings[j]<=ratings[j+1] else candies[j+1]+1
         if candies[j-1] and not candies[j+1]:
-            candies[j] = 1 if ratingsExpand[j]<=ratingsExpand[j-1] else candies[j-1]+1
+            candies[j] = 1 if ratings[j]<=ratings[j-1] else candies[j-1]+1
         else:
-            candiesAccordLeft = 1 if ratingsExpand[j]<=ratingsExpand[j-1] else candies[j-1]+1
-            candiesAccordRight = 1 if ratingsExpand[j]<=ratingsExpand[j+1] else candies[j+1]+1
+            candiesAccordLeft = 1 if ratings[j]<=ratings[j-1] else candies[j-1]+1
+            candiesAccordRight = 1 if ratings[j]<=ratings[j+1] else candies[j+1]+1
             candies[j] = max(candiesAccordLeft, candiesAccordRight)
     print(candies[1:-1])
 

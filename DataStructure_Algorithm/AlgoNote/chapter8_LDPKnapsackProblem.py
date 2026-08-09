@@ -178,6 +178,7 @@ class Solution:
 # 唯一的区别在于：
 # 0-1 背包问题中，转移用的是dp[i - 1][w - weight[i - 1]]，即上一阶段的状态；
 # 完全背包问题中，转移用的是dp[i][w - weight[i - 1]，即当前阶段的状态。
+# 因此 0-1 背包问题的滚动优化是逆序，而完全背包问题的滚动优化是正序
 
 # 滚动数组优化
 class Solution:
@@ -297,4 +298,207 @@ class Solution:
                 # dp[w] 取「前 i - 1 件物品装入载重为 w 的背包中的最大价值」与「前 i - 1 件物品装入载重为 w - weight_new[i - 1] 的背包中，再装入第 i - 1 物品所得的最大价值」两者中的最大值
                 dp[w] = max(dp[w], dp[w - weight_new[i - 1]] + value_new[i - 1])
                     
+        return dp[W]
+
+
+# 混合背包问题
+
+# 混合背包问题其实就是将「0-1 背包问题」、「完全背包问题」和「多重背包问题」这 3 种背包问题综合起来，
+# 有的是能取 1 件，有的能取无数件，有的只能取 count[i] 件。
+# 其实只要理解了之前讲解的这 3 种背包问题的核心思想，只要将其合并在一起就可以了。
+
+# 并且在「多重背包问题」中，我们曾经使用「二进制优化」的方式，将「多重背包问题」转换为「0-1 背包问题」，
+# 那么在解决「混合背包问题」时，我们也可以先将「多重背包问题」转换为「0-1 背包问题」，
+# 然后直接再区分是「0-1 背包问题」还是「完全背包问题」就可以了。
+
+# 下述代码中，count[i]=-1代表数量只有1个，指0-1背包
+# 个人感觉其实不用特别标注，用count[i]=1代表数量为1个更好
+
+class Solution:
+    def mixedPackMethod1(self, weight: list[int], value: list[int], count: list[int], W: int):
+        weight_new, value_new, count_new = [], [], []
+        
+        # 二进制优化
+        for i in range(len(weight)):
+            cnt = count[i]
+            # 多重背包问题，转为 0-1 背包问题
+            if cnt > 0:
+                k = 1
+                while k <= cnt:
+                    cnt -= k
+                    weight_new.append(weight[i] * k)
+                    value_new.append(value[i] * k)
+                    count_new.append(1)
+                    k *= 2
+                if cnt > 0:
+                    weight_new.append(weight[i] * cnt)
+                    value_new.append(value[i] * cnt)
+                    count_new.append(1)
+            # 0-1 背包问题，直接添加
+            elif cnt == -1:
+                weight_new.append(weight[i])
+                value_new.append(value[i])
+                count_new.append(1)
+            # 完全背包问题，标记并添加
+            else:
+                weight_new.append(weight[i])
+                value_new.append(value[i])
+                count_new.append(0)
+                
+        dp = [0 for _ in range(W + 1)]
+        size = len(weight_new)
+    
+        # 枚举前 i 种物品
+        for i in range(1, size + 1):
+            # 0-1 背包问题
+            if count_new[i - 1] == 1:
+                # 逆序枚举背包装载重量（避免状态值错误）
+                for w in range(W, weight_new[i - 1] - 1, -1):
+                    # dp[w] 取「前 i - 1 件物品装入载重为 w 的背包中的最大价值」与「前 i - 1 件物品装入载重为 w - weight_new[i - 1] 的背包中，再装入第 i - 1 物品所得的最大价值」两者中的最大值
+                    dp[w] = max(dp[w], dp[w - weight_new[i - 1]] + value_new[i - 1])
+            # 完全背包问题
+            else:
+                # 正序枚举背包装载重量
+                for w in range(weight_new[i - 1], W + 1):
+                    # dp[w] 取「前 i - 1 种物品装入载重为 w 的背包中的最大价值」与「前 i 种物品装入载重为 w - weight[i - 1] 的背包中，再装入 1 件第 i - 1 种物品所得的最大价值」两者中的最大值
+                    dp[w] = max(dp[w], dp[w - weight_new[i - 1]] + value_new[i - 1])
+                    
+        return dp[W]
+
+
+# 分组背包问题
+
+# 有 n 组物品和一个最多能装重量为 W 的背包，第 i 组物品的件数为 group_count[i]，
+# 第 i 组的第 j 个物品重量为 weight[i][j]，价值为 value[i][j]。
+# 每组物品中最多只能选择 1 件物品装入背包。请问在总重量不超过背包载重上限的情况下，能装入背包的最大价值是多少？
+
+class Solution:
+    # 思路 1：动态规划 + 二维基本思路
+    def groupPackMethod1(self, group_count: list[int], weight: list[list[int]], value: list[list[int]], W: int):
+        size = len(group_count)
+        dp = [[0 for _ in range(W + 1)] for _ in range(size + 1)]
+        
+        # 枚举前 i 组物品
+        for i in range(1, size + 1):
+            # 枚举背包装载重量
+            for w in range(W + 1):
+                # 枚举第 i - 1 组物品能取个数
+                dp[i][w] = dp[i - 1][w]
+                for k in range(group_count[i - 1]):
+                    if w >= weight[i - 1][k]:
+                        # dp[i][w] 取所有 dp[i - 1][w - weight[i - 1][k]] + value[i - 1][k] 中最大值
+                        dp[i][w] = max(dp[i][w], dp[i - 1][w - weight[i - 1][k]] + value[i - 1][k])
+
+# 分组背包问题的滚动数组优化
+
+class Solution:
+    # 思路 2：动态规划 + 滚动数组优化
+    def groupPackMethod2(self, group_count: list[int], weight: list[list[int]], value: list[list[int]], W: int):
+        size = len(group_count)
+        dp = [0 for _ in range(W + 1)]
+        
+        # 枚举前 i 组物品
+        for i in range(1, size + 1):
+            # 逆序枚举背包装载重量
+            for w in range(W, -1, -1):
+                # 枚举第 i - 1 组物品能取个数
+                for k in range(group_count[i - 1]):
+                    if w >= weight[i - 1][k]:
+                        # dp[w] 取所有 dp[w - weight[i - 1][k]] + value[i - 1][k] 中最大值
+                        dp[w] = max(dp[w], dp[w - weight[i - 1][k]] + value[i - 1][k])
+                        
+        return dp[W]
+
+# 二维费用背包问题
+
+# 有 n 件物品和有一个最多能装重量为 W、容量为 V 的背包。
+# 第 i 件物品的重量为 weight[i]，体积为 volume[i]，价值为 value[i]，每件物品有且只有 1 件。
+# 请问在总重量不超过背包载重上限、容量上限的情况下，能装入背包的最大价值是多少？
+
+# 我们可以参考「0-1 背包问题」的状态定义和基本思路，
+# 在「0-1 背包问题」基本思路的基础上，增加一个维度用于表示物品的容量。
+
+class Solution:
+    # 思路 1：动态规划 + 三维基本思路
+    def twoDCostPackMethod1(self, weight: list[int], volume: list[int], value: list[int], W: int, V: int):
+        size = len(weight)
+        dp = [[[0 for _ in range(V + 1)] for _ in range(W + 1)] for _ in range(size + 1)]
+    
+        # 枚举前 i 组物品
+        for i in range(1, size + 1):
+            # 枚举背包装载重量
+            for w in range(W + 1):
+                # 枚举背包装载容量
+                for v in range(V + 1):
+                    # 第 i - 1 件物品装不下
+                    if w < weight[i - 1] or v < volume[i - 1]:
+                        # dp[i][w][v] 取「前 i - 1 件物品装入装载重量为 w、装载容量为 v 的背包中的最大价值」
+                        dp[i][w][v] = dp[i - 1][w][v]
+                    else:
+                        # dp[i][w][v] 取所有 dp[w - weight[i - 1]][v - volume[i - 1]] + value[i - 1] 中最大值
+                        dp[i][w][v] = max(dp[i - 1][w][v], dp[i - 1][w - weight[i - 1]][v - volume[i - 1]] + value[i - 1])
+                        
+        return dp[size][W][V]
+
+# 注意：采用上面的三维方式的「状态定义」和「状态转移方程」，往往会导致内存超出要求限制，
+# 所以一般我们会采用「滚动数组」对算法的空间复杂度进行优化。
+
+# 二维费用背包问题滚动数组优化
+
+class Solution:        
+    # 思路 2：动态规划 + 滚动数组优化
+    def twoDCostPackMethod2(self, weight: list[int], volume: list[int], value: list[int], W: int, V: int):
+        size = len(weight)
+        dp = [[0 for _ in range(V + 1)] for _ in range(W + 1)]
+        
+        # 枚举前 i 组物品
+        for i in range(1, size + 1):
+            # 逆序枚举背包装载重量
+            for w in range(W, weight[i - 1] - 1, -1):
+                # 逆序枚举背包装载容量
+                for v in range(V, volume[i - 1] - 1, -1):
+                    # dp[w][v] 取所有 dp[w - weight[i - 1]][v - volume[i - 1]] + value[i - 1] 中最大值
+                    dp[w][v] = max(dp[w][v], dp[w - weight[i - 1]][v - volume[i - 1]] + value[i - 1])
+                    
+        return dp[W][V]
+
+
+# 背包问题变种
+
+# 1. 求恰好装满背包的最大价值
+
+# 在给定背包重量 W，每件物品重量 weight[i]，物品间相互关系（分组、依赖等）的背包问题中，
+# 请问在恰好装满背包的情况下，能装入背包的最大价值总和是多少？
+
+# 如果题目要求「恰好装满背包」，则我们可在原有状态定义、状态转移方程的基础上，
+# 在初始化时，令 dp[0]=0，以及 d[w]=−∞,1≤w≤W。 这样就可以保证最终得到的 dp[W] 为恰好装满背包的最大价值总和。
+
+# 这是因为：
+# 初始化的 dp 数组实际上就是在没有任何物品可以放入背包时的「合法状态」。
+# 如果不要求恰好装满背包，那么：
+#   任何载重上限下的背包，在不放入任何物品时，都有一个合法解，此时背包所含物品的最大价值为 0，即 dp[w]=0,0≤w≤W。
+# 而如果要求恰好装满背包，那么：
+#   1. 只有载重上限为 0 的背包，在不放入物品时，能够恰好装满背包（有合法解），
+#      此时背包所含物品的最大价值为 0，即 dp[0]=0。
+#   2. 其他载重上限下的背包，在放入物品的时，都不能恰好装满背包（都没有合法解），
+#      此时背包所含物品的最大价值属于未定义状态，值应为 −∞，即 dp[w]=−∞,0≤w≤W。
+# 我们可以通过判断 dp[w] 与 −∞ 的关系，来判断是否能恰好装满背包。
+
+# 0-1 背包问题求恰好装满背包的最大价值
+class Solution:
+    # 0-1 背包问题 求恰好装满背包的最大价值
+    def zeroOnePackJustFillUp(self, weight: list[int], value: list[int], W: int):
+        size = len(weight)
+        dp = [float('-inf') for _ in range(W + 1)]
+        dp[0] = 0
+        
+        # 枚举前 i 种物品
+        for i in range(1, size + 1):
+            # 逆序枚举背包装载重量（避免状态值错误）
+            for w in range(W, weight[i - 1] - 1, -1):
+                # dp[w] 取「前 i - 1 件物品装入载重为 w 的背包中的最大价值」与「前 i - 1 件物品装入载重为 w - weight[i - 1] 的背包中，再装入第 i - 1 物品所得的最大价值」两者中的最大值
+                dp[w] = max(dp[w], dp[w - weight[i - 1]] + value[i - 1])
+        
+        if dp[W] == float('-inf'):
+            return -1
         return dp[W]
